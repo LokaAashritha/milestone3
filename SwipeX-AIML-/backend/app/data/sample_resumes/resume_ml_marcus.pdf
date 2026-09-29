@@ -1,0 +1,58 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 1501 >>
+stream
+BT
+/F1 10 Tf
+40 780 Td
+14 TL
+(Dr. Marcus Vance) Tj
+T* (Email: marcus.vance@example.com | Google Scholar: scholar.google.com/citations?user=mvance) Tj
+T* (Summary:) Tj
+T* (Machine Learning Scientist with expertise in Natural Language Processing \(NLP\), Transformer architectures, and recommendation algorithms. Skilled in turning raw data and embeddings into production ML solutions.) Tj
+T* () Tj
+T* (Technical Skills:) Tj
+T* (- Machine Learning & NLP: Python, PyTorch, TensorFlow, scikit-learn, spaCy, Transformers, HuggingFace, NLTK) Tj
+T* (- Data Analysis: pandas, NumPy, SciPy, SQL, Matplotlib, Seaborn, Tableau) Tj
+T* (- Infrastructure: Docker, AWS, MLflow, Git, Linux, Jupyter) Tj
+T* () Tj
+T* (Experience:) Tj
+T* (Lead ML Engineer | Lexicon Intelligence | 2021 - Present) Tj
+T* (- Built semantic search and job recommendation engines using Sentence Transformers and cosine similarity metrics.) Tj
+T* (- Developed custom NER pipelines with spaCy to parse technical skills and certifications from unstructured resumes.) Tj
+T* (- Evaluated ranking models offline using NDCG@10, Mean Reciprocal Rank \(MRR\), and Precision@K.) Tj
+T* () Tj
+T* (Data Scientist | OmniData Analytics | 2018 - 2021) Tj
+T* (- Applied scikit-learn classifiers and clustering algorithms to user behavior telemetry.) Tj
+T* (- Built predictive models in pandas and NumPy to forecast user subscription churn.) Tj
+T* () Tj
+T* (Education:) Tj
+T* (Ph.D. in Computer Science \(NLP Focus\) | Stanford University | 2014 - 2018) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000001794 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1864
+%%EOF

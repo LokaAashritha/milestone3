@@ -1,0 +1,22 @@
+Sarah Chen
+Email: sarah.chen@example.com | Portfolio: sarahchen.dev | LinkedIn: linkedin.com/in/sarahchen
+Summary:
+Creative Frontend Developer specializing in React, TypeScript, and modern UI/UX workflows. Proven track record of delivering responsive, accessible, and performant web applications.
+
+Technical Skills:
+- Frontend: React, Next.js, TypeScript, JavaScript, HTML5, CSS3, Tailwind CSS, Redux, Zustand
+- Testing & Tooling: Jest, React Testing Library, Vite, Webpack, Git, npm, Figma
+- APIs & Integration: REST API, GraphQL, Axios, WebSocket
+
+Work Experience:
+Frontend Developer | WebStudio Digital | 2021 - Present
+- Built modular design systems and accessible UI components in React and TypeScript styled with Tailwind CSS.
+- Migrated legacy single-page applications to Next.js with server-side rendering, improving SEO and Core Web Vitals.
+- Collaborated closely with UI/UX designers using Figma to deliver intuitive interactive prototypes.
+
+Junior Web Developer | PixelCraft | 2020 - 2021
+- Created responsive landing pages and dashboard widgets using JavaScript, HTML5, CSS3, and Redux.
+- Wrote unit and component integration tests using Jest and React Testing Library.
+
+Education:
+B.S. in Software Engineering | California Polytechnic State University | 2016 - 2020

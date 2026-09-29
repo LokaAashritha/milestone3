@@ -1,0 +1,61 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 1738 >>
+stream
+BT
+/F1 10 Tf
+40 780 Td
+14 TL
+(Alex Rivera) Tj
+T* (Email: alex.rivera@example.com | Phone: \(555\) 234-5678 | GitHub: github.com/alexrivera) Tj
+T* (Summary:) Tj
+T* (Versatile Senior Software Engineer with 5+ years of experience building scalable backend services, RESTful APIs, and distributed systems. Passionate about clean code, async architectures, and cloud-native solutions.) Tj
+T* () Tj
+T* (Technical Skills:) Tj
+T* (- Programming Languages: Python, JavaScript, TypeScript, SQL, Bash) Tj
+T* (- Frameworks & Libraries: FastAPI, Django, Flask, SQLAlchemy, Pydantic, Celery) Tj
+T* (- Databases & Storage: PostgreSQL, Redis, MongoDB, MySQL) Tj
+T* (- Cloud & DevOps: Docker, Kubernetes, AWS \(S3, EC2, ECS\), CI/CD, Git, Linux) Tj
+T* (- Architecture & Practices: REST API, Microservices, Agile, Unit Testing, pytest) Tj
+T* () Tj
+T* (Professional Experience:) Tj
+T* (Senior Backend Engineer | DataCloud Inc. | 2022 - Present) Tj
+T* (- Architected and deployed microservices handling 15M+ requests daily using FastAPI, PostgreSQL, and Redis.) Tj
+T* (- Containerized application services using Docker and managed deployments on Kubernetes clusters.) Tj
+T* (- Implemented automated CI/CD testing pipelines with pytest and GitHub Actions, boosting test coverage to 92%.) Tj
+T* () Tj
+T* (Software Engineer | AppVenture Labs | 2019 - 2022) Tj
+T* (- Developed REST APIs in Python and Django for an enterprise e-commerce platform.) Tj
+T* (- Optimized slow SQL queries in PostgreSQL, reducing average response latency by 45%.) Tj
+T* (- Integrated Redis caching layer to handle high peak traffic during seasonal flash sales.) Tj
+T* () Tj
+T* (Education:) Tj
+T* (Bachelor of Science in Computer Science | University of Washington | 2015 - 2019) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000002031 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+2101
+%%EOF

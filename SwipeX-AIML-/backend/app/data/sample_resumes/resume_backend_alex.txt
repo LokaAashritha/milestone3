@@ -1,0 +1,25 @@
+Alex Rivera
+Email: alex.rivera@example.com | Phone: (555) 234-5678 | GitHub: github.com/alexrivera
+Summary:
+Versatile Senior Software Engineer with 5+ years of experience building scalable backend services, RESTful APIs, and distributed systems. Passionate about clean code, async architectures, and cloud-native solutions.
+
+Technical Skills:
+- Programming Languages: Python, JavaScript, TypeScript, SQL, Bash
+- Frameworks & Libraries: FastAPI, Django, Flask, SQLAlchemy, Pydantic, Celery
+- Databases & Storage: PostgreSQL, Redis, MongoDB, MySQL
+- Cloud & DevOps: Docker, Kubernetes, AWS (S3, EC2, ECS), CI/CD, Git, Linux
+- Architecture & Practices: REST API, Microservices, Agile, Unit Testing, pytest
+
+Professional Experience:
+Senior Backend Engineer | DataCloud Inc. | 2022 - Present
+- Architected and deployed microservices handling 15M+ requests daily using FastAPI, PostgreSQL, and Redis.
+- Containerized application services using Docker and managed deployments on Kubernetes clusters.
+- Implemented automated CI/CD testing pipelines with pytest and GitHub Actions, boosting test coverage to 92%.
+
+Software Engineer | AppVenture Labs | 2019 - 2022
+- Developed REST APIs in Python and Django for an enterprise e-commerce platform.
+- Optimized slow SQL queries in PostgreSQL, reducing average response latency by 45%.
+- Integrated Redis caching layer to handle high peak traffic during seasonal flash sales.
+
+Education:
+Bachelor of Science in Computer Science | University of Washington | 2015 - 2019

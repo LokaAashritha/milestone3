@@ -1,0 +1,19 @@
+Jordan Taylor
+Email: jordan.taylor@example.com | GitHub: github.com/jordantaylor
+Summary:
+Enthusiastic Junior Software Developer with a solid foundation in Python, web development fundamentals, and database concepts. Eager to contribute to collaborative engineering teams.
+
+Technical Skills:
+- Languages: Python, JavaScript, SQL, HTML5, CSS3
+- Tools & Frameworks: FastAPI, Flask, Git, GitHub, VS Code, SQLite
+
+Projects:
+Job Board Aggregator (Personal Project) | 2024
+- Built a web scraper and REST API using Python and FastAPI to aggregate tech job listings.
+- Stored job records in SQLite and implemented basic keyword search filters.
+
+Portfolio Website | 2023
+- Designed and launched responsive personal portfolio using HTML5, CSS3, and JavaScript.
+
+Education:
+B.S. in Information Technology | State University | 2020 - 2024

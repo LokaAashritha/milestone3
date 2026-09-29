@@ -1,0 +1,15 @@
+pandas
+scikit-learn
+spacy
+pdfplumber
+pypdf
+python-docx
+sentence-transformers
+chromadb
+fastapi
+uvicorn
+python-multipart
+pytest
+httpx
+ruff
+

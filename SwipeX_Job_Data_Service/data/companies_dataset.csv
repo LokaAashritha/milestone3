@@ -1,0 +1,30 @@
+company_id,name,slug,company_type,is_newly_founded,industry,headquarters,funding_stage,website,founded_year,employee_count_range
+1,Google,google,MNC,False,Internet & Cloud Technology,"Mountain View, CA (Bengaluru/Hyderabad)",Public / Post-IPO,https://careers.google.com,1998,10000+
+2,Microsoft,microsoft,MNC,False,Software & AI Solutions,"Redmond, WA (Hyderabad/Bengaluru/Noida)",Public / Post-IPO,https://careers.microsoft.com,1975,10000+
+3,Amazon,amazon,MNC,False,E-commerce & Cloud Computing (AWS),"Seattle, WA (Bengaluru/Hyderabad/Chennai)",Public / Post-IPO,https://amazon.jobs,1994,10000+
+4,Adobe,adobe,MNC,False,Creative & Cloud Software,"San Jose, CA (Noida/Bengaluru)",Public / Post-IPO,https://adobe.com/careers,1982,10000+
+5,Tata Consultancy Services (TCS),tcs,MNC,False,IT Services & Consulting,"Mumbai, India (Pan India)",Public / Post-IPO,https://tcs.com/careers,1968,10000+
+6,Infosys,infosys,MNC,False,Next-Gen Digital Services,"Bengaluru, India",Public / Post-IPO,https://infosys.com/careers,1981,10000+
+7,Cisco,cisco,MNC,False,Networking & Cybersecurity,"San Jose, CA (Bengaluru)",Public / Post-IPO,https://cisco.com/careers,1984,10000+
+8,Oracle,oracle,MNC,False,Database & Enterprise Cloud,"Austin, TX (Hyderabad/Bengaluru)",Public / Post-IPO,https://oracle.com/careers,1977,10000+
+9,IBM,ibm,MNC,False,Hybrid Cloud & Cognitive Enterprise,"Armonk, NY (Bengaluru/Kochi)",Public / Post-IPO,https://ibm.com/careers,1911,10000+
+10,Salesforce,salesforce,MNC,False,CRM & Enterprise SaaS,"San Francisco, CA (Hyderabad/Bengaluru)",Public / Post-IPO,https://salesforce.com/careers,1999,10000+
+11,Razorpay,razorpay,Startup,False,Fintech & Payments,"Bengaluru, Karnataka, India",Series F / Unicorn,https://razorpay.com/jobs,2014,1000-5000
+12,Swiggy,swiggy,Startup,False,Hyperlocal Delivery & Quick Commerce,"Bengaluru, Karnataka, India",Public / Pre-IPO,https://careers.swiggy.com,2014,5000-10000
+13,CRED,cred,Startup,False,Fintech & Rewards,"Bengaluru, Karnataka, India",Series E / Unicorn,https://cred.club/careers,2018,500-1000
+14,Zepto,zepto,Startup,False,Quick Commerce,"Mumbai / Bengaluru, India",Series G / Unicorn,https://zeptonow.com/careers,2021,1000-5000
+15,Postman,postman,Startup,False,API Development Platform,"San Francisco, CA & Bengaluru",Series D / Unicorn,https://postman.com/careers,2014,500-1000
+16,Zerodha,zerodha,Startup,False,Fintech & Stock Broking,"Bengaluru, Karnataka, India",Bootstrapped / Profitable,https://zerodha.com/careers,2010,1000-5000
+17,Zomato,zomato,Startup,False,Food Tech & Quick Commerce (Blinkit),"Gurugram, Haryana, India",Public / Post-IPO,https://zomato.com/careers,2008,5000-10000
+18,Groww,groww,Startup,False,Investment Tech & Wealth Management,"Bengaluru, Karnataka, India",Series E / Unicorn,https://groww.in/careers,2016,1000-5000
+19,PhonePe,phonepe,Startup,False,Digital Payments & Financial Services,"Bengaluru, Karnataka, India",Decacorn,https://phonepe.com/careers,2015,5000-10000
+20,Meesho,meesho,Startup,False,E-Commerce & Social Selling,"Bengaluru, Karnataka, India",Series F / Unicorn,https://meesho.io/careers,2015,1000-5000
+21,Urban Company,urban-company,Startup,False,Home Services & Gig Economy,"Gurugram, Haryana, India",Series F / Unicorn,https://urbancompany.com/careers,2014,1000-5000
+22,NovaAI Labs,novaai-labs,Newly Founded,True,Generative AI & Agentic Workflows,Bengaluru (Remote-First),Seed ($2M),https://novaailabs.dev,2024,1-20
+23,SynthLogic Systems,synthlogic,Newly Founded,True,AI Career Intelligence & HR Tech,Pune / Remote,Pre-Seed ($500K),https://synthlogicsys.io,2024,1-15
+24,NeuralScale Dynamics,neuralscale,Newly Founded,True,Deep Learning & Model Optimization,"Hyderabad, Telangana",Seed ($3M),https://neuralscale.ai,2023,1-25
+25,PromptCraft AI,promptcraft-ai,Newly Founded,True,AI Developer Tooling & LLM Eval,Delhi NCR / Remote,Bootstrapped,https://promptcraft.studio,2024,1-10
+26,DataVortex Technologies,datavortex,Newly Founded,True,Real-time Vector Search & RAG,"Bengaluru, India",Seed ($1.5M),https://datavortex.tech,2023,1-15
+27,CogniGen Systems,cognigen,Newly Founded,True,Autonomous Agents for Healthcare,Chennai / Remote,Pre-Seed ($750K),https://cognigen.ai,2024,1-12
+28,OmniAgentic AI,omniagentic,Newly Founded,True,Multi-Agent Code Synthesis,Bengaluru / Remote,Seed ($2.5M),https://omniagentic.dev,2024,1-10
+29,ByteForge Tech,byteforge,Newly Founded,True,Edge AI & Embedded Computing,"Pune, Maharashtra",Seed ($1.2M),https://byteforge.io,2023,1-20

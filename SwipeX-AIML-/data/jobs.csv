@@ -1,0 +1,5 @@
+job_id,title,company,type,location,remote,salary_range,skills,description
+job_py_01,Senior Python Backend Engineer,CloudTech Solutions,Full-time,Remote,True,"$120,000 - $150,000","Python, FastAPI, PostgreSQL, Docker, Redis",We are seeking an experienced Senior Python Backend Engineer to build robust REST APIs microservices with FastAPI and PostgreSQL.
+job_react_02,Frontend React Developer,PixelCraft Media,Full-time,San Francisco CA,False,"$110,000 - $135,000","React, Next.js, TypeScript, Tailwind CSS, Redux",Looking for a passionate Frontend React Developer to build responsive user interfaces with Next.js and TypeScript.
+job_devops_03,DevOps & Infrastructure Engineer,ScaleOps Inc,Full-time,Remote,True,"$130,000 - $160,000","Kubernetes, Docker, AWS, Terraform, CI/CD",Join our team as a DevOps Engineer managing Kubernetes clusters Terraform infrastructure and GitHub Actions CI/CD pipelines.
+job_data_04,Data Engineer,DataPulse Analytics,Full-time,New York NY,False,"$125,000 - $155,000","Python, SQL, BigQuery, Spark, Airflow",DataPulse is looking for a Data Engineer to construct scalable ETL pipelines using Apache Spark BigQuery and Python.

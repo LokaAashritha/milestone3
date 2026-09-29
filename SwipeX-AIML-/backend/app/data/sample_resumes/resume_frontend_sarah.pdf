@@ -1,0 +1,58 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 1483 >>
+stream
+BT
+/F1 10 Tf
+40 780 Td
+14 TL
+(Sarah Chen) Tj
+T* (Email: sarah.chen@example.com | Portfolio: sarahchen.dev | LinkedIn: linkedin.com/in/sarahchen) Tj
+T* (Summary:) Tj
+T* (Creative Frontend Developer specializing in React, TypeScript, and modern UI/UX workflows. Proven track record of delivering responsive, accessible, and performant web applications.) Tj
+T* () Tj
+T* (Technical Skills:) Tj
+T* (- Frontend: React, Next.js, TypeScript, JavaScript, HTML5, CSS3, Tailwind CSS, Redux, Zustand) Tj
+T* (- Testing & Tooling: Jest, React Testing Library, Vite, Webpack, Git, npm, Figma) Tj
+T* (- APIs & Integration: REST API, GraphQL, Axios, WebSocket) Tj
+T* () Tj
+T* (Work Experience:) Tj
+T* (Frontend Developer | WebStudio Digital | 2021 - Present) Tj
+T* (- Built modular design systems and accessible UI components in React and TypeScript styled with Tailwind CSS.) Tj
+T* (- Migrated legacy single-page applications to Next.js with server-side rendering, improving SEO and Core Web Vitals.) Tj
+T* (- Collaborated closely with UI/UX designers using Figma to deliver intuitive interactive prototypes.) Tj
+T* () Tj
+T* (Junior Web Developer | PixelCraft | 2020 - 2021) Tj
+T* (- Created responsive landing pages and dashboard widgets using JavaScript, HTML5, CSS3, and Redux.) Tj
+T* (- Wrote unit and component integration tests using Jest and React Testing Library.) Tj
+T* () Tj
+T* (Education:) Tj
+T* (B.S. in Software Engineering | California Polytechnic State University | 2016 - 2020) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000001776 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1846
+%%EOF

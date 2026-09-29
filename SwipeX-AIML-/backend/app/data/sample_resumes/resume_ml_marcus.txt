@@ -1,0 +1,22 @@
+Dr. Marcus Vance
+Email: marcus.vance@example.com | Google Scholar: scholar.google.com/citations?user=mvance
+Summary:
+Machine Learning Scientist with expertise in Natural Language Processing (NLP), Transformer architectures, and recommendation algorithms. Skilled in turning raw data and embeddings into production ML solutions.
+
+Technical Skills:
+- Machine Learning & NLP: Python, PyTorch, TensorFlow, scikit-learn, spaCy, Transformers, HuggingFace, NLTK
+- Data Analysis: pandas, NumPy, SciPy, SQL, Matplotlib, Seaborn, Tableau
+- Infrastructure: Docker, AWS, MLflow, Git, Linux, Jupyter
+
+Experience:
+Lead ML Engineer | Lexicon Intelligence | 2021 - Present
+- Built semantic search and job recommendation engines using Sentence Transformers and cosine similarity metrics.
+- Developed custom NER pipelines with spaCy to parse technical skills and certifications from unstructured resumes.
+- Evaluated ranking models offline using NDCG@10, Mean Reciprocal Rank (MRR), and Precision@K.
+
+Data Scientist | OmniData Analytics | 2018 - 2021
+- Applied scikit-learn classifiers and clustering algorithms to user behavior telemetry.
+- Built predictive models in pandas and NumPy to forecast user subscription churn.
+
+Education:
+Ph.D. in Computer Science (NLP Focus) | Stanford University | 2014 - 2018

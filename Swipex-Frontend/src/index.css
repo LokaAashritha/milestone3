@@ -1,0 +1,18 @@
+/* @import "tailwindcss";
+
+body {
+  @apply bg-slate-900 text-slate-100 min-h-screen font-sans;
+} */
+
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, sans-serif;
+}

@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  career-intelligence-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: swipex-career-intelligence
+    ports:
+      - "8000:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - CHROMADB_HOST=chromadb
+      - CHROMADB_PORT=8001
+    volumes:
+      - .:/app
+    depends_on:
+      - chromadb
+
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: swipex-chromadb
+    ports:
+      - "8001:8000"
+    volumes:
+      - chromadb-data:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+
+volumes:
+  chromadb-data:
