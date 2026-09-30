@@ -12,4 +12,4 @@ python-multipart
 pytest
 httpx
 ruff
-
+requests==2.32.3

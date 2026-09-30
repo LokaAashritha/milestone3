@@ -38,7 +38,7 @@ The frontend uses `Backend_swipex` as the canonical gateway. The AIML and job/da
 
 ## Start PostgreSQL
 
-Create the shared development database once:
+Create the shared development database once. Docker Desktop must be running:
 
 ```cmd
 docker run --name swipex-postgres -e POSTGRES_USER=swipex -e POSTGRES_PASSWORD=swipex_dev_pass -e POSTGRES_DB=swipex_gateway -p 5432:5432 -d postgres:16-alpine
@@ -65,7 +65,7 @@ Review `.env`, then initialize the fresh database:
 
 ```cmd
 python app\seed.py
-alembic stamp head
+python -m alembic stamp head
 ```
 
 `seed.py` creates the application tables and seed data. `alembic stamp head` records the checked-in resume migration after those tables exist. Do not run `alembic upgrade head` against a database already created by `seed.py`.

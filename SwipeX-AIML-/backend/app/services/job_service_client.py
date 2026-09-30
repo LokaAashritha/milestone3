@@ -1,88 +1,265 @@
-import json
-from pathlib import Path
+from __future__ import annotations
+
+from typing import Any
+
+import requests
 
 from backend.app.core.config import settings
 from backend.app.models.schemas import JobDetail
 
 
 class JobServiceClient:
-    def __init__(self, seed_file: Path = settings.SEED_JOBS_FILE):
-        self.seed_file = seed_file
-        self._cached_jobs: dict[str, JobDetail] = {}
-        self._load_seed_jobs()
+    """
+    HTTP client for the SwipeX Job & Data Intelligence Service.
 
-    def _load_seed_jobs(self) -> None:
-        if not self.seed_file.exists():
-            return
+    Job Data Service is the source of truth for jobs.
+    AIML does not use seed_jobs.json for recommendations.
+    """
+
+    def __init__(
+        self,
+        base_url: str | None = None,
+        timeout: int = 15,
+    ) -> None:
+        self.base_url = (
+            base_url or settings.JOB_DATA_SERVICE_URL
+        ).rstrip("/")
+        self.timeout = timeout
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def _request(
+        self,
+        method: str,
+        path: str,
+        **kwargs: Any,
+    ) -> Any:
+        url = f"{self.base_url}/{path.lstrip('/')}"
 
         try:
-            with open(self.seed_file, encoding="utf-8") as f:
-                data = json.load(f)
-                for item in data:
-                    job_id = str(item.get("job_id"))
-                    title = item.get("job_title") or item.get("title", "")
-                    company = item.get("company_name") or item.get("company", "")
-                    description = item.get("job_description") or item.get("description", "")
+            response = requests.request(
+                method=method,
+                url=url,
+                timeout=self.timeout,
+                **kwargs,
+            )
+        except requests.RequestException as exc:
+            raise RuntimeError(
+                f"Job Data Service is unavailable at {self.base_url}: {exc}"
+            ) from exc
 
-                    raw_skills = item.get("skills_required") or item.get("skills", [])
-                    if isinstance(raw_skills, str):
-                        try:
-                            skills = json.loads(raw_skills)
-                        except Exception:
-                            skills = [s.strip() for s in raw_skills.split(",")]
-                    else:
-                        skills = raw_skills
+        if response.status_code >= 400:
+            try:
+                detail = response.json()
+            except Exception:
+                detail = response.text
 
-                    location = item.get("location", "Remote")
-                    workplace_type = item.get("workplace_type", "")
-                    remote = item.get("remote", True) if "remote" in item else (workplace_type.lower() == "remote")
+            raise RuntimeError(
+                f"Job Data Service returned HTTP "
+                f"{response.status_code}: {detail}"
+            )
 
-                    sal_min = item.get("salary_min")
-                    sal_max = item.get("salary_max")
-                    curr = item.get("salary_currency", "INR")
-                    if sal_min and sal_max:
-                        salary_range = f"{curr} {sal_min:,} - {sal_max:,}"
-                    else:
-                        salary_range = item.get("salary_range", "Competitive")
+        try:
+            return response.json()
+        except ValueError as exc:
+            raise RuntimeError(
+                f"Job Data Service returned invalid JSON for {url}"
+            ) from exc
 
-                    job = JobDetail(
-                        job_id=job_id,
-                        title=title,
-                        company=company,
-                        type=item.get("job_type", "Full-time"),
-                        location=location,
-                        remote=remote,
-                        salary_range=salary_range,
-                        skills=skills,
-                        description=description,
-                        posted_at=item.get("posted_at"),
+    # ------------------------------------------------------------------
+    # Conversion
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _to_job_detail(item: dict[str, Any]) -> JobDetail:
+        """
+        Convert Job Data Service JobSummaryOut/JobDetailOut
+        into the AIML JobDetail model.
+        """
+
+        job_id = item.get("job_id", item.get("id"))
+
+        title = (
+            item.get("title")
+            or item.get("job_title")
+            or ""
+        )
+
+        company_value = item.get("company", "")
+
+        if isinstance(company_value, dict):
+            company = (
+                company_value.get("name")
+                or company_value.get("company_name")
+                or ""
+            )
+        else:
+            company = str(company_value or "")
+
+        description = (
+            item.get("description")
+            or item.get("job_description")
+            or ""
+        )
+
+        skills = item.get("skills") or []
+        required_skills = item.get("required_skills") or []
+
+        if isinstance(skills, str):
+            skills = [
+                skill.strip()
+                for skill in skills.split(",")
+                if skill.strip()
+            ]
+
+        if isinstance(required_skills, str):
+            required_skills = [
+                skill.strip()
+                for skill in required_skills.split(",")
+                if skill.strip()
+            ]
+
+        # Combine skills and required_skills without duplicates.
+        combined_skills: list[str] = []
+
+        for skill in [*skills, *required_skills]:
+            skill_clean = str(skill).strip()
+
+            if skill_clean and skill_clean.lower() not in {
+                existing.lower()
+                for existing in combined_skills
+            }:
+                combined_skills.append(skill_clean)
+
+        workplace_type = str(
+            item.get("workplace_type")
+            or ""
+        )
+
+        location = str(
+            item.get("location")
+            or "Remote"
+        )
+
+        remote = (
+            workplace_type.lower() == "remote"
+            or "remote" in location.lower()
+        )
+
+        salary_range = item.get("salary_range")
+
+        if not salary_range:
+            salary_min = item.get("salary_min")
+            salary_max = item.get("salary_max")
+            currency = item.get("salary_currency", "INR")
+
+            if salary_min is not None and salary_max is not None:
+                try:
+                    salary_range = (
+                        f"{currency} "
+                        f"{int(salary_min):,} - "
+                        f"{int(salary_max):,}"
                     )
-                    self._cached_jobs[job.job_id] = job
+                except (TypeError, ValueError):
+                    salary_range = "Competitive"
+            else:
+                salary_range = "Competitive"
 
-            # Support legacy alias keys for backward compatibility in unit tests
-            if "5" in self._cached_jobs and "job_py_01" not in self._cached_jobs:
-                self._cached_jobs["job_py_01"] = self._cached_jobs["5"]
-            if "8" in self._cached_jobs and "job_react_02" not in self._cached_jobs:
-                self._cached_jobs["job_react_02"] = self._cached_jobs["8"]
+        return JobDetail(
+            job_id=str(job_id),
+            title=title,
+            company=company,
+            type=str(
+                item.get("type")
+                or item.get("job_type")
+                or "Full-time"
+            ),
+            location=location,
+            remote=remote,
+            salary_range=str(salary_range),
+            skills=combined_skills,
+            description=description,
+            posted_at=item.get("posted_at"),
+        )
 
-        except Exception as e:
-            print(f"[Warning] Failed to load seed jobs: {e}")
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
 
     def get_job(self, job_id: str) -> JobDetail | None:
-        return self._cached_jobs.get(str(job_id))
+        """
+        Get one real job from Job Data Service.
+        """
+
+        try:
+            data = self._request(
+                "GET",
+                f"/jobs/{int(job_id)}",
+            )
+        except (ValueError, RuntimeError):
+            return None
+
+        if not isinstance(data, dict):
+            return None
+
+        return self._to_job_detail(data)
 
     def list_jobs(self) -> list[JobDetail]:
-        # Return unique jobs (skip alias duplicate pointers)
-        seen = set()
-        unique_jobs = []
-        for job in self._cached_jobs.values():
-            if job.job_id not in seen:
-                seen.add(job.job_id)
-                unique_jobs.append(job)
-        return unique_jobs
+        """
+        Get active jobs from the real Job Data Service.
+        """
+
+        data = self._request(
+            "GET",
+            "/jobs",
+            params={
+                "page": 1,
+                "page_size": 100,
+            },
+        )
+
+        if isinstance(data, dict):
+            # Defensive handling if Job Data returns a wrapped response.
+            items = (
+                data.get("jobs")
+                or data.get("items")
+                or data.get("data")
+                or []
+            )
+        elif isinstance(data, list):
+            items = data
+        else:
+            items = []
+
+        jobs: list[JobDetail] = []
+
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+
+            try:
+                jobs.append(self._to_job_detail(item))
+            except Exception:
+                # Ignore malformed individual records rather than
+                # crashing the entire recommendation request.
+                continue
+
+        return jobs
 
     def add_or_update_job(self, job: JobDetail) -> None:
-        self._cached_jobs[job.job_id] = job
+        """
+        Deprecated compatibility method.
+
+        Job creation/update belongs to Job Data Service.
+        AIML must not maintain its own job database.
+        """
+
+        raise RuntimeError(
+            "AIML cannot locally add or update jobs. "
+            "Create or update jobs through the Job Data Service."
+        )
 
 
 job_service_client = JobServiceClient()

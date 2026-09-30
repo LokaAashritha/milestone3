@@ -1,15 +1,140 @@
+# ==========================================
+# SwipeX Monorepo Master .gitignore
+# ==========================================
+
+# ------------------------------------------
+# 1. Python Virtual Environments (Global & Nested)
+# ------------------------------------------
+venv/
+.venv/
+aiml_env/
+integ/
+env/
+ENV/
+env.bak/
+venv.bak/
+**/venv/
+**/.venv/
+**/aiml_env/
+**/integ/
+**/env/
+
+# ------------------------------------------
+# 2. Python Caches, Build & Compiled Files
+# ------------------------------------------
 __pycache__/
 *.py[cod]
-.venv/
-venv/
-.env
-.pytest_cache/
-.ruff_cache/
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ------------------------------------------
+# 3. Node.js & Frontend Artifacts (Swipex-Frontend)
+# ------------------------------------------
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-debug.log*
+.vite/
+**/dist/
+**/build/
+.out/
+
+# ------------------------------------------
+# 4. Databases, Local Storage & Backups
+# ------------------------------------------
 *.db
 *.sqlite
 *.sqlite3
-uploads/
-storage/
-logs/
-.vscode/
+*.db-journal
+*.db-shm
+*.db-wal
+swipex_dev.db
+**/swipex_dev.db
+backups/*.tar.gz
+backups/*.dump
+backups/*.sql
+
+# ------------------------------------------
+# 5. User Uploads, Media & Temporary Storage
+# ------------------------------------------
+uploads/*
+!uploads/.gitkeep
+**/uploads/*
+!**/uploads/.gitkeep
+**/storage/resumes/*
+!**/storage/resumes/.gitkeep
+**/data/sample_resumes/*.pdf
+**/data/sample_resumes/*.docx
+
+# ------------------------------------------
+# 6. Environment Variables & Secrets
+# ------------------------------------------
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+!*.env.example
+!*.env.template
+
+# ------------------------------------------
+# 7. Testing & Coverage Tools
+# ------------------------------------------
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.nox/
+.hypothesis/
+.ruff_cache/
+.mypy_cache/
+
+# ------------------------------------------
+# 8. IDE, Text Editors & OS Files
+# ------------------------------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# IDEs
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
 .idea/
+*.swp
+*.swo
+*~

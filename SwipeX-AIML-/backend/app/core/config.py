@@ -2,6 +2,7 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
+
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 APP_DIR = BASE_DIR / "app"
 
@@ -11,9 +12,23 @@ class Settings(BaseModel):
     VERSION: str = "0.1.0"
     API_V1_STR: str = "/api/v1"
 
+    # ------------------------------------------------------------------
+    # Job Data Service
+    # ------------------------------------------------------------------
+    JOB_DATA_SERVICE_URL: str = "http://localhost:8004/api/v1"
+
+    # ------------------------------------------------------------------
+    # Local AI/ML storage
+    # ------------------------------------------------------------------
     UPLOAD_DIR: Path = BASE_DIR / "storage" / "resumes"
     MAX_FILE_SIZE_BYTES: int = 10 * 1024 * 1024
-    ALLOWED_EXTENSIONS: set[str] = {".pdf", ".docx", ".txt"}
+
+    ALLOWED_EXTENSIONS: set[str] = {
+        ".pdf",
+        ".docx",
+        ".txt",
+    }
+
     ALLOWED_MIME_TYPES: set[str] = {
         "application/pdf",
         "text/plain",
@@ -22,19 +37,32 @@ class Settings(BaseModel):
         "application/octet-stream",
     }
 
+    # ------------------------------------------------------------------
+    # Legacy seed-data location
+    # Kept so existing code does not break immediately.
+    # Recommendation integration will no longer use it.
+    # ------------------------------------------------------------------
     DATA_DIR: Path = APP_DIR / "data"
     SEED_JOBS_FILE: Path = APP_DIR / "data" / "seed_jobs.json"
 
+    # ------------------------------------------------------------------
+    # ATS configuration
+    # ------------------------------------------------------------------
     REQUIRED_SKILLS_WEIGHT: float = 0.70
     KEYWORD_OVERLAP_WEIGHT: float = 0.30
+
     GENERATED_BY_TAG: str = "blended-v2"
 
+    # ------------------------------------------------------------------
+    # Semantic engine
+    # ------------------------------------------------------------------
     CHROMADB_HOST: str = "chromadb"
     CHROMADB_PORT: int = 8001
     EMBEDDING_MODEL_NAME: str = "all-MiniLM-L6-v2"
 
     BLENDED_KEYWORD_WEIGHT: float = 0.50
     BLENDED_SEMANTIC_WEIGHT: float = 0.50
+
     ATS_TARGET_THRESHOLD: float = 80.0
 
 
@@ -42,4 +70,3 @@ settings = Settings()
 
 settings.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 settings.DATA_DIR.mkdir(parents=True, exist_ok=True)
-

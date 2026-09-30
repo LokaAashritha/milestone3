@@ -115,10 +115,28 @@ class Company(Base):
     location = Column(String(255), nullable=True, index=True)
     website = Column(String(255), nullable=True)
     logo_url = Column(String(500), nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    jobs = relationship("Job", back_populates="company", cascade="all, delete-orphan")
-    recruiters = relationship("User", back_populates="company", foreign_keys="User.company_id")
+    # ID of the corresponding company in Job Data service.
+    # Job Data uses INTEGER company IDs while Gateway uses UUIDs.
+    job_data_company_id = Column(Integer, nullable=True, unique=True, index=True)
+
+    created_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    jobs = relationship(
+        "Job",
+        back_populates="company",
+        cascade="all, delete-orphan",
+    )
+
+    recruiters = relationship(
+        "User",
+        back_populates="company",
+        foreign_keys="User.company_id",
+    )
 
     def __repr__(self) -> str:
         return f"<Company id={self.id} name={self.name}>"
@@ -132,17 +150,33 @@ class Job(Base):
     __tablename__ = "jobs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
     company_id = Column(
         UUID(as_uuid=True),
         ForeignKey("companies.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-    posted_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    # ID of the corresponding job in Job Data service.
+    # Job Data uses INTEGER job IDs while Gateway uses UUIDs.
+    job_data_id = Column(
+        Integer,
+        nullable=True,
+        unique=True,
+        index=True,
+    )
+
+    posted_by = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     title = Column(String(255), nullable=False, index=True)
     description = Column(Text, nullable=False)
     location = Column(String(255), nullable=False, index=True)
+
     job_type = Column(
         Enum(
             JobType,
@@ -154,23 +188,87 @@ class Job(Base):
         default=JobType.FULL_TIME,
         server_default=JobType.FULL_TIME.value,
     )
-    experience_level = Column(String(100), nullable=True, index=True)
+
+    experience_level = Column(
+        String(100),
+        nullable=True,
+        index=True,
+    )
+
     salary_min = Column(Numeric(12, 2), nullable=True)
     salary_max = Column(Numeric(12, 2), nullable=True)
-    skills_required = Column(JSON, nullable=False, default=list)  # e.g. ["Python", "SQL"]
-    fresher_friendly = Column(Boolean, nullable=False, default=False, server_default="false", index=True)
-    low_competition = Column(Boolean, nullable=False, default=False, server_default="false", index=True)
-    applicant_count = Column(Integer, nullable=False, default=0, server_default="0")
-    is_active = Column(Integer, nullable=False, default=1)  # 1 = open, 0 = closed
-    posted_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
 
-    company = relationship("Company", back_populates="jobs")
-    swipes = relationship("Swipe", back_populates="job", cascade="all, delete-orphan")
-    saved_jobs = relationship("SavedJob", back_populates="job", cascade="all, delete-orphan")
+    skills_required = Column(
+        JSON,
+        nullable=False,
+        default=list,
+    )
+
+    fresher_friendly = Column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="false",
+        index=True,
+    )
+
+    low_competition = Column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="false",
+        index=True,
+    )
+
+    applicant_count = Column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
+
+    is_active = Column(
+        Integer,
+        nullable=False,
+        default=1,
+    )
+
+    posted_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    created_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+        index=True,
+    )
+
+    company = relationship(
+        "Company",
+        back_populates="jobs",
+    )
+
+    swipes = relationship(
+        "Swipe",
+        back_populates="job",
+        cascade="all, delete-orphan",
+    )
+
+    saved_jobs = relationship(
+        "SavedJob",
+        back_populates="job",
+        cascade="all, delete-orphan",
+    )
 
     __table_args__ = (
-        Index("ix_jobs_location_type", "location", "job_type"),
+        Index(
+            "ix_jobs_location_type",
+            "location",
+            "job_type",
+        ),
     )
 
     def __repr__(self) -> str:

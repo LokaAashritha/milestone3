@@ -1,5 +1,4 @@
-from datetime import UTC, datetime
-
+from datetime import datetime, timezone
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -82,7 +81,7 @@ class ResumeRecord(BaseModel):
     file_type: str
     raw_text: str
     parsed_skills: list[str] = Field(default_factory=list)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class JobDetail(BaseModel):
@@ -109,7 +108,7 @@ class SwipeInteractionResponse(BaseModel):
     user_id: str
     job_id: str
     action: str
-    recorded_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    recorded_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class MatchBreakdownResponse(BaseModel):
@@ -165,7 +164,7 @@ class ResumeVersionItem(BaseModel):
     original_filename: str
     file_type: str
     parsed_skills_count: int
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class ErrorResponse(BaseModel):

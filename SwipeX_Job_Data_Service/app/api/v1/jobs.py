@@ -11,7 +11,10 @@ from app.models.job import (
     Job, JobType, WorkplaceType, ExperienceLevel, CompetitionLevel
 )
 from app.schemas.job import (
-    JobSummaryOut, JobDetailOut, JobListResponse
+    JobSummaryOut,
+    JobDetailOut,
+    JobListResponse,
+    JobCreate,
 )
 from app.schemas.company import CompanyOut
 from app.core.intelligence import compute_job_freshness, compute_competition_level
@@ -257,6 +260,120 @@ def search_jobs(
         formatted = [j for j in formatted if j.freshness_label in ["Just Posted", "Recently Posted"]]
 
     return formatted
+
+@router.post(
+    "",
+    response_model=JobDetailOut,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create Job"
+)
+def create_job(
+    payload: JobCreate,
+    db: Session = Depends(get_db),
+    cache: CacheManager = Depends(get_cache),
+):
+    """
+    Creates the canonical Job Data record.
+
+    Job Data owns the AI/ML-facing job record and generates
+    the integer job ID used by the AIML service.
+    """
+
+    company = (
+        db.query(Company)
+        .filter(Company.id == payload.company_id)
+        .first()
+    )
+
+    if company is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Company with ID {payload.company_id} not found."
+        )
+
+    job = Job(
+        company_id=payload.company_id,
+        title=payload.title,
+        role_category=payload.role_category,
+        description=payload.description,
+        responsibilities=payload.responsibilities,
+        requirements=payload.requirements,
+        job_type=payload.job_type,
+        workplace_type=payload.workplace_type,
+        location=payload.location,
+        salary_min=payload.salary_min,
+        salary_max=payload.salary_max,
+        salary_currency=payload.salary_currency,
+        salary_period=payload.salary_period,
+        experience_level=payload.experience_level,
+        experience_years_min=payload.experience_years_min,
+        experience_years_max=payload.experience_years_max,
+        competition_level=payload.competition_level,
+        applicant_count=payload.applicant_count,
+        is_fresher_friendly=payload.is_fresher_friendly,
+        is_active=payload.is_active,
+        expires_at=payload.expires_at,
+    )
+
+    job.skills = payload.skills
+    job.required_skills = payload.required_skills
+    job.keywords = payload.keywords
+
+    db.add(job)
+    db.commit()
+    db.refresh(job)
+
+    # Prevent stale cached job-list/detail responses.
+    try:
+        cache.delete(f"job_detail:{job.id}")
+    except Exception:
+        pass
+
+    freshness = compute_job_freshness(job.posted_at)
+    comp_info = compute_competition_level(job.applicant_count)
+
+    company_out = CompanyOut.model_validate(job.company) if job.company else None
+
+    return JobDetailOut(
+        id=job.id,
+        job_id=job.id,
+        title=job.title,
+        company=company_out,
+        role_category=job.role_category,
+        description=job.description,
+        responsibilities=job.responsibilities,
+        requirements=job.requirements,
+        skills=job.skills,
+        required_skills=job.required_skills,
+        keywords=job.keywords,
+        job_type=job.job_type,
+        workplace_type=job.workplace_type,
+        location=job.location,
+        salary_min=job.salary_min,
+        salary_max=job.salary_max,
+        salary_currency=job.salary_currency,
+        salary_period=job.salary_period,
+        salary_range=format_salary_range(
+            job.salary_min,
+            job.salary_max,
+            job.salary_currency,
+            job.salary_period,
+        ),
+        experience_level=job.experience_level,
+        experience_years_min=job.experience_years_min,
+        experience_years_max=job.experience_years_max,
+        competition_level=comp_info["competition_level"],
+        applicant_count=job.applicant_count,
+        is_fresher_friendly=job.is_fresher_friendly,
+        is_active=job.is_active,
+        posted_at=job.posted_at,
+        expires_at=job.expires_at,
+        created_at=job.posted_at,
+        freshness_label=freshness["freshness_label"],
+        posted_days_ago=freshness["days_ago"],
+        is_early_applicant=comp_info["is_early_applicant"],
+        competition_score=comp_info["competition_score"],
+    )
 
 
 @router.get("/{job_id}", response_model=JobDetailOut, summary="Get Job Detail by ID")

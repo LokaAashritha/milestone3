@@ -1,465 +1,638 @@
-"""
-Recommendation / Matching Engine Gateway.
 
-Architecture note (decoupled / plug-and-play):
---------------------------------------------------------------------------
-The real Data Science matching engine (a separate team/service) is not yet
-available. Rather than hard-coding a dependency on that external service
-(which would break this endpoint whenever the ML team's service is offline,
-unfinished, or simply not deployed in this environment), we implement a
-`MatchingEngineService` wrapper class below.
+from __future__ import annotations
 
-    - It exposes a stable interface:
-      `get_recommendations(user, jobs) -> List[(Job, score, reasons)]`
-    - Internally, it FIRST attempts to call an external matching engine via
-      HTTP if `MATCHING_ENGINE_URL` is configured in the environment.
-    - If that URL is not configured, or the call fails/times out for any
-      reason, it transparently falls back to a local heuristic scorer built
-      on plain Python + set operations (no external ML dependency required).
-
-This means the /api/v1/recommendations endpoint ALWAYS returns a valid,
-useful response, whether or not the external ML service exists yet.
---------------------------------------------------------------------------
-"""
-
-import os
 from datetime import datetime, timezone
-from typing import List, Tuple
+from typing import Any
 
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session, joinedload
+import requests
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import Session
 
-from app.database import get_db
-from app.models import Job, User, Swipe, SwipeAction
-from app.schemas import RecommendationResponse, RecommendationItem
 from app.auth import get_current_user
-from app.utils import serialize_job
-from app.services.mock_ats_engine import generate_recommendation_scores
+from app.core.config import settings
+from app.database import get_db
+from app.models import Job, User
+from app.schemas import RecommendationItem, RecommendationResponse
 
 
-router = APIRouter()
-
-
-MATCHING_ENGINE_URL = os.getenv("MATCHING_ENGINE_URL", "").strip()
-MATCHING_ENGINE_TIMEOUT_SECONDS = float(
-    os.getenv("MATCHING_ENGINE_TIMEOUT_SECONDS", "2.0")
+router = APIRouter(
+    prefix="/recommendations",
+    tags=["Recommendations"],
 )
 
 
-class MatchingEngineService:
+# ---------------------------------------------------------------------------
+# Internal service URLs
+# ---------------------------------------------------------------------------
+
+AIML_SERVICE_URL = getattr(
+    settings,
+    "AIML_SERVICE_URL",
+    "http://localhost:8002/api/v1",
+).rstrip("/")
+
+JOB_DATA_SERVICE_URL = getattr(
+    settings,
+    "JOB_DATA_SERVICE_URL",
+    "http://localhost:8004/api/v1",
+).rstrip("/")
+
+REQUEST_TIMEOUT = 20
+
+
+# ---------------------------------------------------------------------------
+# Internal service helpers
+# ---------------------------------------------------------------------------
+
+def _get_headers(user_id: str) -> dict[str, str]:
     """
-    Modular wrapper around the job-recommendation matching engine.
-
-    Provides a single stable method, `get_recommendations`, that callers can
-    rely on regardless of whether the real external ML microservice is
-    reachable. This keeps the FastAPI gateway fully decoupled from that
-    team's release schedule / infrastructure state.
+    Headers sent to internal SwipeX services.
     """
 
-    ENGINE_NAME_EXTERNAL = "external-ml-engine"
-    ENGINE_NAME_HEURISTIC = "heuristic-fallback-v1"
+    return {
+        "X-User-ID": str(user_id),
+    }
 
-    def __init__(self, external_url: str = "", timeout_seconds: float = 2.0):
-        self.external_url = external_url
-        self.timeout_seconds = timeout_seconds
 
-    # ---------------------------------------------------------------
-    # Public entrypoint
-    # ---------------------------------------------------------------
+def _call_service(
+    method: str,
+    url: str,
+    *,
+    user_id: str,
+    params: dict[str, Any] | None = None,
+) -> Any:
+    """
+    Call an internal SwipeX service.
 
-    def get_recommendations(
-        self,
-        user: User,
-        candidate_jobs: List[Job],
-        applied_or_skipped_job_ids: set,
-        limit: int,
-    ) -> Tuple[str, List[Tuple[Job, float, List[str]]]]:
-        """
-        Returns a tuple of:
+    There is intentionally NO mock-data or local fallback.
+    If AIML or Job Data is unavailable, the Gateway returns
+    an explicit service error.
+    """
 
-            (
-                engine_name_used,
-                [
-                    (job, score_0_to_100, reasons),
-                    ...
-                ]
-            )
-
-        Results are sorted by score descending and capped at `limit`.
-        """
-
-        if self.external_url:
-            external_result = self._try_external_engine(
-                user,
-                candidate_jobs,
-                limit
-            )
-
-            if external_result is not None:
-                return self.ENGINE_NAME_EXTERNAL, external_result
-
-        # Fallback: local heuristic engine
-        heuristic_result = self._heuristic_score(
-            user,
-            candidate_jobs,
-            applied_or_skipped_job_ids
+    try:
+        response = requests.request(
+            method=method,
+            url=url,
+            headers=_get_headers(user_id),
+            params=params,
+            timeout=REQUEST_TIMEOUT,
         )
 
-        heuristic_result.sort(
-            key=lambda item: item[1],
-            reverse=True
-        )
+    except requests.RequestException as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                f"Required SwipeX service is unavailable: "
+                f"{url}. Error: {exc}"
+            ),
+        ) from exc
 
-        return self.ENGINE_NAME_HEURISTIC, heuristic_result[:limit]
-
-    # ---------------------------------------------------------------
-    # External engine
-    # ---------------------------------------------------------------
-
-    def _try_external_engine(
-        self,
-        user: User,
-        candidate_jobs: List[Job],
-        limit: int
-    ):
-        """
-        Attempts to call an externally hosted matching engine over HTTP.
-
-        Any failure is swallowed and results in a `None` return, triggering
-        the local heuristic fallback so the endpoint never breaks.
-        """
-
+    if response.status_code >= 400:
         try:
-            import requests
-
-            job_payload = [
-                {
-                    "id": str(job.id),
-                    "title": job.title,
-                    "skills_required": job.skills_required or [],
-                    "location": job.location,
-                }
-                for job in candidate_jobs
-            ]
-
-            response = requests.post(
-                self.external_url,
-                json={
-                    "user_id": str(user.id),
-                    "user_skills": user.skills or [],
-                    "jobs": job_payload,
-                    "limit": limit,
-                },
-                timeout=self.timeout_seconds,
-            )
-
-            response.raise_for_status()
-
-            data = response.json()
-
-            jobs_by_id = {
-                str(job.id): job
-                for job in candidate_jobs
-            }
-
-            results = []
-
-            for entry in data.get("recommendations", []):
-                job = jobs_by_id.get(entry.get("job_id"))
-
-                if job is None:
-                    continue
-
-                score = float(
-                    entry.get("score", 0)
-                )
-
-                reasons = entry.get(
-                    "reasons",
-                    []
-                )
-
-                results.append(
-                    (
-                        job,
-                        score,
-                        reasons
-                    )
-                )
-
-            return results if results else None
-
+            detail = response.json()
         except Exception:
-            # External engine must never cause the recommendation API
-            # to return a 500 error.
-            return None
+            detail = response.text
+
+        raise HTTPException(
+            status_code=response.status_code,
+            detail=detail,
+        )
+
+    try:
+        return response.json()
+
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=(
+                f"Invalid JSON response received from "
+                f"SwipeX service: {url}"
+            ),
+        ) from exc
+
+
+# ---------------------------------------------------------------------------
+# Job Data → Gateway ID mapping
+# ---------------------------------------------------------------------------
+
+def _get_gateway_job_by_job_data_id(
+    db: Session,
+    job_data_id: int,
+) -> Job | None:
+    """
+    Resolve a canonical Job Data integer ID to the corresponding
+    Gateway UUID job.
+
+    Mapping:
+
+        Job Data:
+            jobs.id = integer
+
+        Gateway:
+            jobs.job_data_id = Job Data integer
+            jobs.id = Gateway UUID
+
+    The Gateway UUID is what the frontend must receive.
+    """
+
+    return (
+        db.query(Job)
+        .filter(
+            Job.job_data_id == int(job_data_id),
+            Job.is_active.is_(True),
+        )
+        .first()
+    )
+
+
+# ---------------------------------------------------------------------------
+# Job Data details
+# ---------------------------------------------------------------------------
+
+def _get_job_details(
+    job_data_id: int,
+    user_id: str,
+) -> dict[str, Any] | None:
+    """
+    Retrieve canonical job details from the Job Data Service.
+
+    `job_data_id` is always the integer ID owned by Job Data.
+    """
+
+    try:
+        response = requests.get(
+            f"{JOB_DATA_SERVICE_URL}/jobs/{int(job_data_id)}",
+            headers=_get_headers(user_id),
+            timeout=REQUEST_TIMEOUT,
+        )
+
+    except requests.RequestException:
+        return None
+
+    if response.status_code == 404:
+        return None
+
+    if response.status_code >= 400:
+        return None
+
+    try:
+        data = response.json()
+
+    except ValueError:
+        return None
+
+    return data if isinstance(data, dict) else None
+
+
+# ---------------------------------------------------------------------------
+# Job normalization
+# ---------------------------------------------------------------------------
+
+def _normalize_job(
+    job: dict[str, Any],
+    gateway_job: Job | None = None,
+) -> dict[str, Any]:
+    """
+    Convert Job Data's representation into the Gateway/frontend
+    job representation.
+
+    IMPORTANT:
+    The returned `id` and `job_id` are Gateway UUIDs whenever
+    the corresponding Gateway job exists.
+
+    This prevents the frontend from receiving the Job Data integer
+    as if it were a Gateway UUID.
+    """
+
+    company = job.get("company")
+
+    if isinstance(company, dict):
+        company_name = (
+            company.get("name")
+            or company.get("company_name")
+            or ""
+        )
+
+        company_id = company.get("id")
+
+    else:
+        company_name = str(company or "")
+        company_id = job.get("company_id")
+
+    skills = (
+        job.get("skills")
+        or job.get("required_skills")
+        or []
+    )
+
+    if isinstance(skills, str):
+        skills = [
+            item.strip()
+            for item in skills.split(",")
+            if item.strip()
+        ]
 
     # ---------------------------------------------------------------
-    # Local heuristic fallback engine
+    # Gateway UUID is the public ID.
+    # Job Data integer is used only internally for service-to-service
+    # communication.
     # ---------------------------------------------------------------
 
-    def _heuristic_score(
-        self,
-        user: User,
-        candidate_jobs: List[Job],
-        applied_or_skipped_job_ids: set,
-    ) -> List[Tuple[Job, float, List[str]]]:
-        """
-        Simple, explainable, dependency-free scoring heuristic:
+    if gateway_job is not None:
+        public_job_id = str(gateway_job.id)
 
-            +70 points max:
-                proportion of the job's required skills that overlap
-                with the user's declared skills
+        gateway_company_id = gateway_job.company_id
 
-            +20 points:
-                job location matches a location the user has
-                previously shown interest in
+        if gateway_job.company is not None:
+            gateway_company_name = gateway_job.company.name
+        else:
+            gateway_company_name = company_name
 
-            +10 points:
-                newer postings receive a small recency boost
+        if gateway_company_id is not None:
+            company_id = gateway_company_id
 
-            +5 points:
-                jobs with fewer than 10 applicants
+        if gateway_company_name:
+            company_name = gateway_company_name
 
-            -100 points:
-                jobs already applied to or skipped are excluded.
+    else:
+        public_job_id = job.get(
+            "job_id",
+            job.get("id"),
+        )
 
-        This produces a 0-100 match score and a short list of
-        human-readable reasons.
-        """
+    return {
+        "id": public_job_id,
+        "job_id": public_job_id,
 
-        user_skills = {
-            s.strip().lower()
-            for s in (user.skills or [])
-            if s and s.strip()
-        }
+        "company_id": company_id,
+        "company_name": company_name,
 
-        results: List[
-            Tuple[Job, float, List[str]]
-        ] = []
+        "title": job.get(
+            "title",
+            "",
+        ),
 
-        now = datetime.now(timezone.utc)
+        "description": job.get(
+            "description",
+            "",
+        ),
 
-        for job in candidate_jobs:
+        "location": job.get(
+            "location",
+            "",
+        ),
 
-            # Don't recommend jobs already applied to or skipped.
-            if job.id in applied_or_skipped_job_ids:
-                continue
+        "job_type": (
+            job.get("type")
+            or job.get("job_type")
+            or "Full-time"
+        ),
 
-            reasons: List[str] = []
-            score = 0.0
+        "workplace_type": job.get(
+            "workplace_type",
+            "",
+        ),
 
-            job_skills = {
-                s.strip().lower()
-                for s in (job.skills_required or [])
-                if s and s.strip()
-            }
+        "experience_level": job.get(
+            "experience_level",
+            "",
+        ),
 
-            if job_skills:
-                overlap = user_skills & job_skills
+        "salary_min": job.get(
+            "salary_min"
+        ),
 
-                overlap_ratio = (
-                    len(overlap) / len(job_skills)
+        "salary_max": job.get(
+            "salary_max"
+        ),
+
+        "salary_range": job.get(
+            "salary_range",
+            "Competitive",
+        ),
+
+        "skills_required": skills,
+        "skills": skills,
+
+        "fresher_friendly": bool(
+            job.get(
+                "is_fresher_friendly",
+                job.get(
+                    "fresher_friendly",
+                    True,
+                ),
+            )
+        ),
+
+        "low_competition": (
+            str(
+                job.get(
+                    "competition_level",
+                    "",
                 )
+            ).lower()
+            == "low"
+        ),
 
-                skill_score = round(
-                    overlap_ratio * 70,
-                    2
-                )
+        "applicant_count": job.get(
+            "applicant_count",
+            0,
+        ),
 
-                score += skill_score
+        "is_active": bool(
+            job.get(
+                "is_active",
+                True,
+            )
+        ),
 
-                if overlap:
-                    reasons.append(
-                        f"Matches {len(overlap)}/{len(job_skills)} "
-                        f"required skills: "
-                        f"{', '.join(sorted(overlap))}"
-                    )
+        "posted_at": job.get(
+            "posted_at"
+        ),
 
-            else:
-                # No listed requirements:
-                # treat as neutral/moderate fit.
-                score += 35
+        "created_at": job.get(
+            "created_at",
+            job.get("posted_at"),
+        ),
 
-            # -------------------------------------------------------
-            # Recency score
-            # -------------------------------------------------------
+        "competition_level": job.get(
+            "competition_level",
+            "Medium",
+        ),
 
-            posted_at = job.posted_at
+        "posted_time": job.get(
+            "posted_time",
+            "",
+        ),
+    }
 
-            if posted_at.tzinfo is None:
-                posted_at = posted_at.replace(
-                    tzinfo=timezone.utc
-                )
 
-            age_days = (
-                now - posted_at
-            ).total_seconds() / 86400
+# ---------------------------------------------------------------------------
+# Recommendation item construction
+# ---------------------------------------------------------------------------
 
-            if age_days <= 3:
-                score += 10
-                reasons.append("Recently posted")
+def _build_recommendation_item(
+    recommendation: dict[str, Any],
+    job: dict[str, Any],
+    gateway_job: Job | None = None,
+) -> RecommendationItem:
+    """
+    Combine AIML scoring data with canonical Job Data details.
 
-            elif age_days <= 14:
-                score += 5
+    AIML owns recommendation scoring.
+    Job Data owns job information.
+    Gateway owns the public UUID mapping.
+    """
 
-            # -------------------------------------------------------
-            # Competition score
-            # -------------------------------------------------------
-
-            if (
-                job.applicant_count is not None
-                and job.applicant_count < 10
-            ):
-                score += 5
-
-                reasons.append(
-                    "Low competition — fewer than 10 applicants so far"
-                )
-
-            # Keep score between 0 and 100.
-            score = max(
+    match_score = float(
+        recommendation.get(
+            "match_percentage",
+            recommendation.get(
+                "match_score",
                 0.0,
-                min(
-                    100.0,
-                    round(score, 2)
-                )
-            )
+            ),
+        )
+    )
 
-            if not reasons:
-                reasons.append(
-                    "General fit based on your profile"
-                )
+    reason_tags = recommendation.get(
+        "reason_tags",
+        recommendation.get(
+            "recommendation_tags",
+            [],
+        ),
+    )
 
-            results.append(
-                (
-                    job,
-                    score,
-                    reasons
-                )
-            )
+    if not isinstance(reason_tags, list):
+        reason_tags = []
 
-        return results
+    semantic_score = recommendation.get(
+        "semantic_match_score"
+    )
+
+    return RecommendationItem(
+        job=_normalize_job(
+            job,
+            gateway_job=gateway_job,
+        ),
+
+        match_score=match_score,
+
+        match_reasons=reason_tags,
+
+        semantic_match_score=(
+            float(semantic_score)
+            if semantic_score is not None
+            else None
+        ),
+
+        recommendation_tags=reason_tags,
+    )
 
 
-# -------------------------------------------------------------------
-# Matching engine instance
-# -------------------------------------------------------------------
-
-matching_engine = MatchingEngineService(
-    external_url=MATCHING_ENGINE_URL,
-    timeout_seconds=MATCHING_ENGINE_TIMEOUT_SECONDS,
-)
-
-
-# -------------------------------------------------------------------
-# Recommendation endpoint
-# -------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# GET /api/v1/recommendations
+# ---------------------------------------------------------------------------
 
 @router.get(
     "",
     response_model=RecommendationResponse,
-    summary="Get personalized job recommendations for the current user",
+    summary="Get AI-powered personalized job recommendations",
 )
 def get_recommendations(
     limit: int = Query(
         10,
         ge=1,
-        le=50,
-        description="Maximum number of recommendations to return"
+        le=100,
     ),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+
+    workplace_type: str | None = Query(
+        None,
+    ),
+
+    hybrid: bool = Query(
+        False,
+    ),
+
+    current_user: User = Depends(
+        get_current_user
+    ),
+
+    db: Session = Depends(
+        get_db
+    ),
 ):
-    # ---------------------------------------------------------------
-    # 1. Exclude jobs already applied to or skipped
-    # ---------------------------------------------------------------
+    """
+    Generate personalized recommendations for the authenticated user.
 
-    excluded_swipes = (
-        db.query(Swipe.job_id)
-        .filter(
-            Swipe.user_id == current_user.id,
-            Swipe.action.in_(
-                [
-                    SwipeAction.APPLY,
-                    SwipeAction.SKIP
-                ]
-            ),
-        )
-        .all()
-    )
+    Integration flow:
 
-    excluded_job_ids = {
-        row[0]
-        for row in excluded_swipes
+        Frontend
+            ↓
+        Gateway
+            ↓
+        AIML
+            ↓
+        Job Data
+            ↓
+        AIML recommendation scores
+            ↓
+        Gateway resolves Job Data ID → Gateway UUID
+            ↓
+        Frontend-compatible response
+
+    Source of truth:
+
+        Gateway:
+            authentication + public job UUID
+
+        Job Data:
+            canonical job information
+
+        AIML:
+            recommendation scoring
+    """
+
+    user_id = str(current_user.id)
+
+    # ------------------------------------------------------------------
+    # STEP 1
+    # Ask AIML for personalized recommendation scores.
+    # ------------------------------------------------------------------
+
+    params: dict[str, Any] = {
+        "user_id": user_id,
+        "limit": limit,
+        "hybrid": hybrid,
     }
 
-    # ---------------------------------------------------------------
-    # 2. Get active jobs
-    # ---------------------------------------------------------------
+    if workplace_type:
+        params["workplace_type"] = workplace_type
 
-    candidate_jobs = (
-        db.query(Job)
-        .options(
-            joinedload(Job.company)
-        )
-        .filter(
-            Job.is_active == 1
-        )
-        .all()
+    recommendations = _call_service(
+        "GET",
+        f"{AIML_SERVICE_URL}/recommendations",
+        user_id=user_id,
+        params=params,
     )
 
-    # ---------------------------------------------------------------
-    # 3. Generate recommendation scores
-    # ---------------------------------------------------------------
-
-    engine_used, scored = matching_engine.get_recommendations(
-        user=current_user,
-        candidate_jobs=candidate_jobs,
-        applied_or_skipped_job_ids=excluded_job_ids,
-        limit=limit,
-    )
-
-    # ---------------------------------------------------------------
-    # 4. Build recommendation response
-    #
-    # Task 5.2:
-    # Use mock ATS engine to generate:
-    #   - semantic_match_score
-    #   - recommendation_tags
-    # ---------------------------------------------------------------
-
-    recommendations = []
-
-    for job, score, reasons in scored:
-
-        matching_data = generate_recommendation_scores(
-            resume_skills=current_user.skills or [],
-            job_skills=job.skills_required or [],
+    if not isinstance(
+        recommendations,
+        list,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=(
+                "AIML recommendation service returned "
+                "an unexpected response."
+            ),
         )
 
-        recommendations.append(
-            RecommendationItem(
-                job=serialize_job(job),
-                match_score=score,
-                match_reasons=reasons,
-                semantic_match_score=matching_data[
-                    "semantic_match_score"
-                ],
-                recommendation_tags=matching_data[
-                    "recommendation_tags"
-                ],
+    # ------------------------------------------------------------------
+    # STEP 2
+    # Enrich every recommendation with canonical Job Data details.
+    # ------------------------------------------------------------------
+
+    result_items: list[RecommendationItem] = []
+
+    for recommendation in recommendations:
+
+        if not isinstance(
+            recommendation,
+            dict,
+        ):
+            continue
+
+        job_data_id = recommendation.get(
+            "job_id"
+        )
+
+        if job_data_id is None:
+            continue
+
+        # --------------------------------------------------------------
+        # Validate that AIML returned a numeric Job Data ID.
+        # --------------------------------------------------------------
+
+        try:
+            numeric_job_data_id = int(
+                job_data_id
+            )
+
+        except (
+            TypeError,
+            ValueError,
+        ):
+            # AIML must return Job Data IDs.
+            # Never silently reinterpret a UUID as a Job Data ID.
+            continue
+
+        # --------------------------------------------------------------
+        # Resolve Job Data integer → Gateway UUID.
+        # --------------------------------------------------------------
+
+        gateway_job = (
+            _get_gateway_job_by_job_data_id(
+                db,
+                numeric_job_data_id,
             )
         )
 
-    # ---------------------------------------------------------------
-    # 5. Return final recommendation response
-    # ---------------------------------------------------------------
+        if gateway_job is None:
+            # This means the Gateway does not have a synchronized
+            # record for the recommended Job Data job.
+            #
+            # Do NOT expose the Job Data integer as the public
+            # Gateway job ID.
+            continue
+
+        # --------------------------------------------------------------
+        # Retrieve canonical job details from Job Data.
+        # --------------------------------------------------------------
+
+        job = _get_job_details(
+            numeric_job_data_id,
+            user_id,
+        )
+
+        if not job:
+            # Do not fabricate job details.
+            continue
+
+        # --------------------------------------------------------------
+        # Build frontend-compatible recommendation.
+        # --------------------------------------------------------------
+
+        try:
+            result_items.append(
+                _build_recommendation_item(
+                    recommendation,
+                    job,
+                    gateway_job=gateway_job,
+                )
+            )
+
+        except Exception:
+            # One malformed recommendation should not break
+            # all other valid recommendations.
+            continue
+
+    # ------------------------------------------------------------------
+    # STEP 3
+    # Return the Gateway response.
+    # ------------------------------------------------------------------
 
     return RecommendationResponse(
         user_id=current_user.id,
-        generated_at=datetime.now(timezone.utc),
-        engine=engine_used,
-        count=len(recommendations),
-        recommendations=recommendations,
+
+        generated_at=datetime.now(
+            timezone.utc
+        ),
+
+        engine="aiml",
+
+        count=len(
+            result_items
+        ),
+
+        recommendations=result_items,
     )
